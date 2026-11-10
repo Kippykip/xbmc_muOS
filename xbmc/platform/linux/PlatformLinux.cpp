@@ -36,6 +36,9 @@
 #if defined(HAVE_GBM)
 #include "windowing/gbm/WinSystemGbmGLESContext.h"
 #endif
+#if defined(HAVE_SDL)
+#include "windowing/sdl/WinSystemSDLGLESContext.h"
+#endif
 #endif
 
 #if defined(HAS_GL)
@@ -76,6 +79,9 @@ bool CPlatformLinux::InitStageOne()
 #endif
 #if defined(HAVE_GBM)
   KODI::WINDOWING::GBM::CWinSystemGbmGLESContext::Register();
+#endif
+#if defined(HAVE_SDL)
+  KODI::WINDOWING::SDL::CWinSystemSDLGLESContext::Register();
 #endif
 #endif
 
