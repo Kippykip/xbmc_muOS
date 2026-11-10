@@ -3,7 +3,7 @@
 list(APPEND PLATFORM_REQUIRED_DEPS SDL2)
 
 if(APP_RENDER_SYSTEM STREQUAL "gles")
-  list(APPEND PLATFORM_REQUIRED_DEPS OpenGLES)
+  list(APPEND PLATFORM_REQUIRED_DEPS OpenGLES EGL)
 else()
   message(FATAL_ERROR "The sdl platform only supports APP_RENDER_SYSTEM=gles")
 endif()

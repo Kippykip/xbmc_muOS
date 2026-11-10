@@ -24,6 +24,9 @@
 #include "utils/XTimeUtils.h"
 #include "utils/log.h"
 
+#include <cstdlib>
+#include <cstring>
+
 #include <memory>
 #include <mutex>
 
@@ -318,6 +321,66 @@ CDVDVideoCodecFFmpeg::~CDVDVideoCodecFFmpeg()
   Dispose();
 }
 
+#if defined(HAVE_SDL)
+namespace
+{
+/*!
+ * \brief Return the libpmhwdec hardware decoder for this stream if FFmpeg has it and the
+ * hardware accepts the stream, nullptr otherwise. Set KODI_PMHWDEC=0 to disable.
+ */
+const AVCodec* FindPmhwdecDecoder(const CDVDStreamInfo& hints)
+{
+  const char* env = getenv("KODI_PMHWDEC");
+  if (env && env[0] == '0')
+    return nullptr;
+
+  const char* name = nullptr;
+  if (hints.codec == AV_CODEC_ID_H264)
+    name = "h264_pmhwdec";
+  else if (hints.codec == AV_CODEC_ID_HEVC)
+    name = "hevc_pmhwdec";
+  if (!name)
+    return nullptr;
+
+  const AVCodec* codec = avcodec_find_decoder_by_name(name);
+  if (!codec)
+    return nullptr;
+
+  // Probe: the wrapper refuses to open when there is no hardware, or the profile / bit depth /
+  // size is beyond the chip, so the caller can fall back to the software decoder.
+  AVCodecContext* probe = avcodec_alloc_context3(codec);
+  if (!probe)
+    return nullptr;
+  probe->coded_width = hints.width;
+  probe->coded_height = hints.height;
+  probe->width = hints.width;
+  probe->height = hints.height;
+  probe->profile = hints.profile;
+  probe->level = hints.level;
+  probe->bits_per_raw_sample = hints.bitdepth;
+  if (hints.extradata)
+  {
+    probe->extradata = static_cast<uint8_t*>(
+        av_mallocz(hints.extradata.GetSize() + AV_INPUT_BUFFER_PADDING_SIZE));
+    if (probe->extradata)
+    {
+      probe->extradata_size = hints.extradata.GetSize();
+      memcpy(probe->extradata, hints.extradata.GetData(), hints.extradata.GetSize());
+    }
+  }
+  const int ret = avcodec_open2(probe, codec, nullptr);
+  avcodec_free_context(&probe);
+
+  if (ret < 0)
+  {
+    CLog::Log(LOGINFO, "CDVDVideoCodecFFmpeg: {} not usable for this stream, using software", name);
+    return nullptr;
+  }
+  return codec;
+}
+} // namespace
+#endif
+
 bool CDVDVideoCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options)
 {
   if (hints.cryptoSession)
@@ -347,6 +410,13 @@ bool CDVDVideoCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
   if (hints.codec == AV_CODEC_ID_AV1 && m_decoderState != STATE_HW_FAILED &&
       !(hints.codecOptions & CODEC_FORCE_SOFTWARE))
     pCodec = avcodec_find_decoder_by_name("av1");
+
+#if defined(HAVE_SDL)
+  // muOS / PortMaster handhelds: libpmhwdec adds h264_pmhwdec / hevc_pmhwdec wrapper decoders
+  // to FFmpeg that drive the SoC's video engine. They are only used when the probe opens.
+  if (!pCodec && m_decoderState != STATE_HW_FAILED && !(hints.codecOptions & CODEC_FORCE_SOFTWARE))
+    pCodec = FindPmhwdecDecoder(hints);
+#endif
 
   if (!pCodec)
     pCodec = avcodec_find_decoder(hints.codec);

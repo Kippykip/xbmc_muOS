@@ -10,6 +10,7 @@
 
 #include "WinEventsSDL.h"
 #include "cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.h"
+#include "cores/VideoPlayer/Process/sdl/ProcessInfoSDL.h"
 #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
 #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
 #include "guilib/DispResource.h"
@@ -66,6 +67,7 @@ bool CWinSystemSDLGLESContext::InitWindowSystem()
   VIDEOPLAYER::CRendererFactory::ClearRenderer();
   CDVDFactoryCodec::ClearHWAccels();
   CLinuxRendererGLES::Register();
+  VIDEOPLAYER::CProcessInfoSDL::Register();
   CScreenshotSurfaceGLES::Register();
 
   return CWinSystemBase::InitWindowSystem();

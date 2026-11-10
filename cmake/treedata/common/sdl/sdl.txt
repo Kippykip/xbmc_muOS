@@ -1,1 +1,2 @@
+xbmc/cores/VideoPlayer/Process/sdl cores/VideoPlayer/Process/sdl
 xbmc/windowing/sdl windowing/sdl

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<gameList>
+  <game>
+    <path>./Kodi.sh</path>
+    <name>Kodi</name>
+    <desc>Kodi media center for PortMaster handhelds.</desc>
+    <developer>Team Kodi</developer>
+    <publisher>Kodi Foundation</publisher>
+    <genre>Media</genre>
+    <image>./kodi/screenshot.png</image>
+  </game>
+</gameList>
